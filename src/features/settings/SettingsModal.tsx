@@ -156,6 +156,7 @@ export function SettingsModal({ s, set, replaceAll, platforms, progress, onSync,
         </div></div>
 
       <h3>Início</h3>
+      <Toggle label="Som de abertura da tela cheia" checked={s.intro_sound !== "off"} onChange={(v) => void set("intro_sound", v ? "on" : "off")} />
       <Toggle label="Abrir já em tela cheia" checked={s.start_fullscreen === "on"} onChange={(v) => void set("start_fullscreen", v ? "on" : "off")} />
       <Toggle label="Iniciar com o Windows" checked={auto} onChange={(v) => void toggleAutostart(v)} />
       <p className="muted">As duas opções começam desligadas. Juntas, o ALEXANDRIA liga em tela cheia, como um console.</p>

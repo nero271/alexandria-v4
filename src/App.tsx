@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { asset } from "./lib/assets";
+import { playIntro } from "./lib/sound";
+import { FullscreenIntro } from "./components/FullscreenIntro";
 import type { Game } from "./lib/types";
 import { useActionHandler } from "./input/bus";
 import { useInputSource } from "./input/useInputSource";
@@ -53,6 +55,19 @@ export default function App() {
   useEffect(() => {
     document.body.dataset.mode = mode;
     getCurrentWindow().setFullscreen(mode === "fullscreen").catch(() => {});
+  }, [mode]);
+
+  // Ao entrar na tela cheia: animação (se as animações estiverem ligadas) e som de abertura.
+  const [intro, setIntro] = useState(false);
+  useEffect(() => {
+    if (mode !== "fullscreen") {
+      setIntro(false);
+      return;
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (cfg.s.animations !== "off" && !reduce) setIntro(true);
+    if (cfg.s.intro_sound !== "off") playIntro();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   const toggleMode = () => setMode((m) => (m === "fullscreen" ? "desktop" : "fullscreen"));
@@ -182,6 +197,8 @@ export default function App() {
           notify={notify}
         />
       )}
+
+      {intro && <FullscreenIntro name={cfg.appName} onDone={() => setIntro(false)} />}
 
       {toast && <div className="toast" role="status">{toast}</div>}
     </>

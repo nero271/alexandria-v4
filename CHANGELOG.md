@@ -1,5 +1,11 @@
 # ALEXANDRIA — histórico de versões
 
+## v6.1 — abertura da tela cheia e correção de bordas
+- Animação ao entrar no modo tela cheia (escuro, brilho na cor de destaque, linha de luz e o nome do app),
+  com som de abertura sintetizado (acorde etéreo com cintilações). Opção "Som de abertura da tela cheia" nos ajustes.
+- A animação respeita o ajuste de animações e a redução de movimento do Windows.
+- Corrigido: a primeira e a última capa da fileira apareciam cortadas nas bordas da tela cheia.
+
 ## v6 — lojas, tempo de jogo, teclado na tela e mais
 - Abrir já em tela cheia agora é uma opção nos ajustes (desligada por padrão); também há "Iniciar com o Windows".
 - Epic Games e GOG: jogos instalados entram na biblioteca como os da Steam (sincronização por loja).
