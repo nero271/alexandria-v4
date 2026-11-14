@@ -10,6 +10,7 @@
     "core:window:allow-minimize",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
-    "dialog:default"
+    "dialog:default",
+    "autostart:default"
   ]
 }

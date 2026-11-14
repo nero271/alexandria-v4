@@ -1,4 +1,5 @@
 use super::model::{Game, GameUpdate, InstallState, NewGame, SyncSummary};
+use crate::platforms::ExternalApp;
 use crate::steam::SteamApp;
 use std::collections::HashSet;
 use crate::error::{AppError, AppResult};
@@ -7,11 +8,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const COLUMNS: &str = "id, name, platform, platform_id, launch_target, category, \
     install_state, favorite, last_played_at, description, cover_path, hero_path, \
-    background_path, logo_path, created_at, updated_at";
+    background_path, logo_path, created_at, updated_at, playtime_minutes";
 
 const MAX_NAME_LEN: usize = 200;
 
-fn now() -> i64 {
+pub(crate) fn now() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
@@ -54,6 +55,7 @@ fn from_row(r: &Row) -> rusqlite::Result<Game> {
         logo_path: r.get(13)?,
         created_at: r.get(14)?,
         updated_at: r.get(15)?,
+        playtime_minutes: r.get(16)?,
     })
 }
 
@@ -182,17 +184,39 @@ pub fn mark_played(conn: &Connection, id: i64) -> AppResult<Game> {
     get(conn, id)
 }
 
-/// Sincroniza jogos instalados da Steam. Nunca sobrescreve nome, imagens ou
-/// outras personalizações de jogos já cadastrados.
+pub fn add_playtime(conn: &Connection, id: i64, minutes: i64) -> AppResult<()> {
+    conn.execute(
+        "UPDATE games SET playtime_minutes = playtime_minutes + ?1, updated_at = ?2 WHERE id = ?3",
+        params![minutes, now(), id],
+    )?;
+    Ok(())
+}
+
+/// Sincroniza jogos instalados da Steam.
 pub fn sync_steam(conn: &Connection, apps: &[SteamApp]) -> AppResult<SyncSummary> {
+    let list: Vec<ExternalApp> = apps
+        .iter()
+        .map(|a| ExternalApp {
+            app_id: a.app_id.clone(),
+            name: a.name.clone(),
+            launch_target: Some(format!("steam://rungameid/{}", a.app_id)),
+            playtime_minutes: a.playtime,
+        })
+        .collect();
+    sync_platform(conn, "steam", &list)
+}
+
+/// Sincroniza jogos de uma plataforma (Steam, Epic, GOG). Nunca sobrescreve nome,
+/// imagens ou outras personalizações de jogos já cadastrados.
+pub fn sync_platform(conn: &Connection, platform: &str, apps: &[ExternalApp]) -> AppResult<SyncSummary> {
     let tx = conn.unchecked_transaction()?;
     let ts = now();
     let mut s = SyncSummary::default();
     for a in apps {
         let existing: Option<(i64, String)> = tx
             .query_row(
-                "SELECT id, install_state FROM games WHERE platform = 'steam' AND platform_id = ?1",
-                params![a.app_id],
+                "SELECT id, install_state FROM games WHERE platform = ?1 AND platform_id = ?2",
+                params![platform, a.app_id],
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?;
@@ -205,12 +229,19 @@ pub fn sync_steam(conn: &Connection, apps: &[SteamApp]) -> AppResult<SyncSummary
                     )?;
                     s.updated += 1;
                 }
+                if let Some(p) = a.playtime_minutes {
+                    tx.execute(
+                        "UPDATE games SET playtime_minutes = ?1 WHERE id = ?2 AND playtime_minutes <> ?1",
+                        params![p, id],
+                    )?;
+                }
             }
             None => {
                 tx.execute(
                     "INSERT INTO games (name, platform, platform_id, launch_target, install_state, \
-                     created_at, updated_at) VALUES (?1, 'steam', ?2, ?3, 'installed', ?4, ?4)",
-                    params![a.name, a.app_id, format!("steam://rungameid/{}", a.app_id), ts],
+                     playtime_minutes, created_at, updated_at) \
+                     VALUES (?1, ?2, ?3, ?4, 'installed', ?5, ?6, ?6)",
+                    params![a.name, platform, a.app_id, a.launch_target, a.playtime_minutes.unwrap_or(0), ts],
                 )?;
                 s.added += 1;
             }
@@ -219,10 +250,10 @@ pub fn sync_steam(conn: &Connection, apps: &[SteamApp]) -> AppResult<SyncSummary
     let present: HashSet<&str> = apps.iter().map(|a| a.app_id.as_str()).collect();
     let gone: Vec<i64> = {
         let mut stmt = tx.prepare(
-            "SELECT id, platform_id FROM games WHERE platform = 'steam' \
+            "SELECT id, platform_id FROM games WHERE platform = ?1 \
              AND install_state = 'installed' AND platform_id IS NOT NULL",
         )?;
-        let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?;
+        let rows = stmt.query_map(params![platform], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?;
         let mut v = Vec::new();
         for row in rows {
             let (id, pid) = row?;
@@ -335,7 +366,7 @@ mod tests {
     }
 
     fn app(id: &str, name: &str) -> SteamApp {
-        SteamApp { app_id: id.into(), name: name.into() }
+        SteamApp { app_id: id.into(), name: name.into(), playtime: None }
     }
 
     #[test]
@@ -367,5 +398,26 @@ mod tests {
         set_description_if_empty(&c, g.id, "Segunda").unwrap();
         assert_eq!(get(&c, g.id).unwrap().description.as_deref(), Some("Primeira"));
         assert!(mark_played(&c, g.id).unwrap().last_played_at.is_some());
+    }
+
+    #[test]
+    fn platform_sync_is_scoped_and_updates_playtime() {
+        let c = open_in_memory().unwrap();
+        let epic = |id: &str, name: &str| ExternalApp {
+            app_id: id.into(),
+            name: name.into(),
+            launch_target: Some("C:/x.exe".into()),
+            playtime_minutes: None,
+        };
+        sync_platform(&c, "epic", &[epic("a", "Fortnite")]).unwrap();
+        sync_steam(&c, &[SteamApp { app_id: "1".into(), name: "Hades".into(), playtime: Some(90) }]).unwrap();
+        // Sincronizar a Epic sem jogos não mexe nos jogos da Steam.
+        let s = sync_platform(&c, "epic", &[]).unwrap();
+        assert_eq!(s.uninstalled, 1);
+        let hades = list(&c, Some("Hades"), false).unwrap().remove(0);
+        assert_eq!(hades.install_state, InstallState::Installed);
+        assert_eq!(hades.playtime_minutes, 90);
+        add_playtime(&c, hades.id, 15).unwrap();
+        assert_eq!(get(&c, hades.id).unwrap().playtime_minutes, 105);
     }
 }

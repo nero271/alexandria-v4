@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
-  Game, GameUpdate, IgdbGame, ImageKind, NewGame, SgdbGame, SgdbImage, Settings, SteamStatus, SyncSummary,
+  BackupSummary, Game, GameUpdate, IgdbGame, ImageKind, NewGame, PlatformStatus, SgdbGame, SgdbImage, Settings, SteamStatus, SyncSummary, UpdateInfo,
 } from "./types";
 
 /** Única porta de entrada para o Rust. Os nomes batem com os comandos em src-tauri/src/commands/. */
@@ -15,14 +15,22 @@ export const api = {
 
   steamStatus: () => invoke<SteamStatus>("steam_status"),
   steamSync: () => invoke<SyncSummary>("steam_sync"),
+  platformStatus: () => invoke<PlatformStatus>("platform_status"),
+  platformSync: (platform: "steam" | "epic" | "gog") => invoke<SyncSummary>("platform_sync", { platform }),
   enrichSteamGame: (id: number) => invoke<Game>("enrich_steam_game", { id }),
 
   sgdbSearch: (term: string) => invoke<SgdbGame[]>("sgdb_search", { term }),
   sgdbImages: (gameId: number, kind: ImageKind) => invoke<SgdbImage[]>("sgdb_images", { gameId, kind }),
   igdbSearch: (term: string) => invoke<IgdbGame[]>("igdb_search", { term }),
+  igdbImages: (gameId: number, kind: ImageKind) => invoke<SgdbImage[]>("igdb_images", { gameId, kind }),
   applyImage: (id: number, kind: ImageKind, url: string) => invoke<Game>("apply_image", { id, kind, url }),
   applyLocalImage: (id: number, kind: ImageKind, path: string) =>
     invoke<Game>("apply_local_image", { id, kind, path }),
+
+  exportBackup: (path: string) => invoke<number>("export_backup", { path }),
+  importBackup: (path: string) => invoke<BackupSummary>("import_backup", { path }),
+  checkUpdate: () => invoke<UpdateInfo>("check_update"),
+  openExternal: (url: string) => invoke<void>("open_external", { url }),
 
   getSettings: () => invoke<Settings>("get_settings"),
   setSetting: (key: string, value: string) => invoke<Settings>("set_setting", { key, value }),

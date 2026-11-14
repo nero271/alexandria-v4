@@ -45,6 +45,7 @@ pub struct Game {
     pub logo_path: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub playtime_minutes: i64,
 }
 
 #[derive(Debug, Clone, Deserialize)]

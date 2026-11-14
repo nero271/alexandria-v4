@@ -1,5 +1,16 @@
 # ALEXANDRIA — histórico de versões
 
+## v6 — lojas, tempo de jogo, teclado na tela e mais
+- Abrir já em tela cheia agora é uma opção nos ajustes (desligada por padrão); também há "Iniciar com o Windows".
+- Epic Games e GOG: jogos instalados entram na biblioteca como os da Steam (sincronização por loja).
+- Tempo de jogo: lido da própria Steam e contado quando o jogo abre direto por executável.
+- Teclado na tela: com o controle, confirmar em um campo de texto abre um teclado navegável.
+- IGDB também traz capas e artes (além das descrições); o buscador de imagens ganhou abas SteamGridDB e IGDB.
+- Sons de navegação discretos (opcional, desligados por padrão).
+- Backup e restauração da biblioteca (sem chaves de API); importar nunca sobrescreve.
+- Medição de desempenho sob demanda e verificação de atualização (exige repositório público com versão publicada).
+- O instalador agora também publica a versão no GitHub (Releases). A abertura passa sempre pelo desktop, a menos que a opção esteja ligada.
+
 ## v5.1 — versão visível
 - O número da versão agora aparece nos ajustes e no nome do instalador (ALEXANDRIA_0.5.1_x64-setup.exe),
   para saber exatamente qual versão está instalada.

@@ -20,6 +20,16 @@ pub fn map_err(e: ureq::Error) -> AppError {
     }
 }
 
+pub fn get_json_headers(url: &str, headers: &[(&str, &str)]) -> AppResult<Value> {
+    let mut req = ureq::get(url).timeout(Duration::from_secs(15));
+    for (k, v) in headers {
+        req = req.set(k, v);
+    }
+    let resp = req.call().map_err(map_err)?;
+    resp.into_json::<Value>()
+        .map_err(|e| AppError::Invalid(format!("Resposta inválida do serviço: {e}")))
+}
+
 pub fn get_json(url: &str, bearer: Option<&str>) -> AppResult<Value> {
     let mut req = ureq::get(url).timeout(Duration::from_secs(15));
     if let Some(key) = bearer {

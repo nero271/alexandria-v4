@@ -1,6 +1,6 @@
 [package]
 name = "alexandria"
-version = "0.5.1"
+version = "0.6.0"
 description = "ALEXANDRIA — launcher universal de jogos"
 edition = "2021"
 
@@ -14,6 +14,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
+tauri-plugin-autostart = "2"
 ureq = { version = "2", features = ["json"] }
 tauri-plugin-log = "2"
 serde = { version = "1", features = ["derive"] }

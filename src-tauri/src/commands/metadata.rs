@@ -103,6 +103,25 @@ pub async fn enrich_steam_game(state: State<'_, AppState>, id: i64) -> AppResult
     })
 }
 
+fn igdb_keys(state: &AppState) -> AppResult<(String, String)> {
+    let (id, secret) = state.with_db(|c| Ok((settings::get(c, "igdb_id")?, settings::get(c, "igdb_secret")?)))?;
+    match (id, secret) {
+        (Some(i), Some(s)) => Ok((i, s)),
+        _ => Err(AppError::Invalid(
+            "Configure o Client ID e o Client Secret do IGDB em Configurações.".into(),
+        )),
+    }
+}
+
+/// Capas e artes do IGDB para o usuário escolher.
+#[tauri::command]
+pub async fn igdb_images(state: State<'_, AppState>, game_id: i64, kind: String) -> AppResult<Vec<SgdbImage>> {
+    let (id, secret) = igdb_keys(state.inner())?;
+    tauri::async_runtime::spawn_blocking(move || metadata::igdb_images(&id, &secret, game_id, &kind))
+        .await
+        .map_err(join_err)?
+}
+
 /// Busca descrições no IGDB; o usuário escolhe qual usar.
 #[tauri::command]
 pub async fn igdb_search(state: State<'_, AppState>, term: String) -> AppResult<Vec<IgdbGame>> {

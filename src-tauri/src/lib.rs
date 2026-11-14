@@ -1,3 +1,4 @@
+mod backup;
 mod commands;
 mod db;
 mod error;
@@ -6,6 +7,7 @@ mod launcher;
 mod library;
 mod metadata;
 mod net;
+mod platforms;
 mod settings;
 mod steam;
 
@@ -20,6 +22,7 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             let conn = db::open(&dir.join("alexandria.db"))?;
@@ -46,6 +49,13 @@ pub fn run() {
             commands::metadata::apply_local_image,
             commands::metadata::enrich_steam_game,
             commands::metadata::igdb_search,
+            commands::metadata::igdb_images,
+            commands::platforms::platform_status,
+            commands::platforms::platform_sync,
+            commands::backup::export_backup,
+            commands::backup::import_backup,
+            commands::app::check_update,
+            commands::app::open_external,
             commands::settings::get_settings,
             commands::settings::set_setting,
             commands::settings::set_app_background,

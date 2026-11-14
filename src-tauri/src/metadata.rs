@@ -27,38 +27,45 @@ pub struct IgdbGame {
     pub summary: Option<String>,
 }
 
+fn igdb_token(client_id: &str, secret: &str) -> AppResult<String> {
+    let url = format!(
+        "https://id.twitch.tv/oauth2/token?client_id={}&client_secret={}&grant_type=client_credentials",
+        encode(client_id),
+        encode(secret)
+    );
+    let tok = ureq::post(&url)
+        .timeout(Duration::from_secs(15))
+        .call()
+        .map_err(net::map_err)?
+        .into_json::<serde_json::Value>()
+        .map_err(|e| AppError::Invalid(format!("Resposta inválida da Twitch: {e}")))?;
+    tok.get("access_token")
+        .and_then(|t| t.as_str())
+        .map(String::from)
+        .ok_or_else(|| AppError::Invalid("Não foi possível autenticar no IGDB. Confira o Client ID e o Client Secret.".into()))
+}
+
+fn igdb_query(client_id: &str, token: &str, body: &str) -> AppResult<serde_json::Value> {
+    ureq::post("https://api.igdb.com/v4/games")
+        .timeout(Duration::from_secs(15))
+        .set("Client-ID", client_id)
+        .set("Authorization", &format!("Bearer {token}"))
+        .set("Accept", "application/json")
+        .send_string(body)
+        .map_err(net::map_err)?
+        .into_json::<serde_json::Value>()
+        .map_err(|e| AppError::Invalid(format!("Resposta inválida do IGDB: {e}")))
+}
+
 /// Busca no IGDB (autenticação da Twitch por client credentials).
 pub fn igdb_search(client_id: &str, secret: &str, term: &str) -> AppResult<Vec<IgdbGame>> {
     let term = term.trim();
     if term.is_empty() {
         return Ok(vec![]);
     }
-    let token_url = format!(
-        "https://id.twitch.tv/oauth2/token?client_id={}&client_secret={}&grant_type=client_credentials",
-        encode(client_id),
-        encode(secret)
-    );
-    let tok = ureq::post(&token_url)
-        .timeout(Duration::from_secs(15))
-        .call()
-        .map_err(net::map_err)?
-        .into_json::<serde_json::Value>()
-        .map_err(|e| AppError::Invalid(format!("Resposta inválida da Twitch: {e}")))?;
-    let access = tok
-        .get("access_token")
-        .and_then(|t| t.as_str())
-        .ok_or_else(|| AppError::Invalid("Não foi possível autenticar no IGDB. Confira o Client ID e o Client Secret.".into()))?;
+    let token = igdb_token(client_id, secret)?;
     let safe: String = term.chars().filter(|c| *c != '"' && *c != '\\' && !c.is_control()).collect();
-    let body = format!("search \"{safe}\"; fields name,summary; limit 6;");
-    let v = ureq::post("https://api.igdb.com/v4/games")
-        .timeout(Duration::from_secs(15))
-        .set("Client-ID", client_id)
-        .set("Authorization", &format!("Bearer {access}"))
-        .set("Accept", "application/json")
-        .send_string(&body)
-        .map_err(net::map_err)?
-        .into_json::<serde_json::Value>()
-        .map_err(|e| AppError::Invalid(format!("Resposta inválida do IGDB: {e}")))?;
+    let v = igdb_query(client_id, &token, &format!("search \"{safe}\"; fields name,summary; limit 6;"))?;
     let list = v.as_array().cloned().unwrap_or_default();
     Ok(list
         .iter()
@@ -73,6 +80,43 @@ pub fn igdb_search(client_id: &str, secret: &str, term: &str) -> AppResult<Vec<I
                     .filter(|s| !s.is_empty()),
             })
         })
+        .collect())
+}
+
+fn igdb_url(size: &str, image_id: &str) -> String {
+    format!("https://images.igdb.com/igdb/image/upload/{size}/{image_id}.jpg")
+}
+
+/// Capas (cover) e artes/capturas (background e hero) de um jogo do IGDB.
+pub fn igdb_images(client_id: &str, secret: &str, game_id: i64, kind: &str) -> AppResult<Vec<SgdbImage>> {
+    if !matches!(kind, "cover" | "background" | "hero") {
+        return Err(AppError::Invalid("O IGDB não tem logos. Use o SteamGridDB para logos.".into()));
+    }
+    let token = igdb_token(client_id, secret)?;
+    let body = format!("where id = {game_id}; fields cover.image_id,artworks.image_id,screenshots.image_id; limit 1;");
+    let v = igdb_query(client_id, &token, &body)?;
+    let g = v.as_array().and_then(|a| a.first()).cloned().unwrap_or(serde_json::Value::Null);
+    let ids = |key: &str| -> Vec<String> {
+        g.get(key)
+            .and_then(|a| a.as_array())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|x| x.get("image_id")?.as_str().map(String::from))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    if kind == "cover" {
+        let id = g.get("cover").and_then(|c| c.get("image_id")).and_then(|s| s.as_str());
+        return Ok(id
+            .map(|i| vec![SgdbImage { url: igdb_url("t_cover_big_2x", i), thumb: igdb_url("t_cover_big", i) }])
+            .unwrap_or_default());
+    }
+    let mut all = ids("artworks");
+    all.extend(ids("screenshots"));
+    Ok(all
+        .iter()
+        .map(|i| SgdbImage { url: igdb_url("t_1080p", i), thumb: igdb_url("t_screenshot_med", i) })
         .collect())
 }
 

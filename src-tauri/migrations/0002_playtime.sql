@@ -1,0 +1,1 @@
+ALTER TABLE games ADD COLUMN playtime_minutes INTEGER NOT NULL DEFAULT 0;

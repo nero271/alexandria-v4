@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "../../lib/ipc";
-import type { Game, GameUpdate, NewGame, SteamStatus, SyncSummary } from "../../lib/types";
+import type { Game, GameUpdate, NewGame, PlatformStatus } from "../../lib/types";
 
 const FOCUS_SYNC_MIN_INTERVAL_MS = 30_000;
+const PLATFORMS = ["steam", "epic", "gog"] as const;
 
 export interface Progress {
   done: number;
@@ -12,8 +13,9 @@ export interface Progress {
 export function useLibrary(notify: (msg: string) => void) {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
-  const [steam, setSteam] = useState<SteamStatus | null>(null);
+  const [platforms, setPlatforms] = useState<PlatformStatus | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
+  const platformsRef = useRef<PlatformStatus | null>(null);
   const busy = useRef(false);
   const lastSync = useRef(0);
 
@@ -56,27 +58,46 @@ export function useLibrary(notify: (msg: string) => void) {
     }
   }, [fail, notify, replace]);
 
-  const syncSteam = useCallback(
-    async (quiet = false): Promise<SyncSummary | null> => {
-      if (busy.current) return null;
+  /** Sincroniza Steam, Epic e GOG (as que existirem no computador). */
+  const syncAll = useCallback(
+    async (quiet = false) => {
+      if (busy.current) return;
       busy.current = true;
       try {
-        const s = await api.steamSync();
+        const st = quiet && platformsRef.current ? platformsRef.current : await api.platformStatus();
+        platformsRef.current = st;
+        setPlatforms(st);
+        const total = { added: 0, updated: 0, uninstalled: 0 };
+        let steamAdded = 0;
+        let any = false;
+        for (const p of PLATFORMS) {
+          if (!st[p]) continue;
+          any = true;
+          try {
+            const s = await api.platformSync(p);
+            total.added += s.added;
+            total.updated += s.updated;
+            total.uninstalled += s.uninstalled;
+            if (p === "steam") steamAdded = s.added;
+          } catch (e) {
+            if (!quiet) fail(e);
+          }
+        }
         lastSync.current = Date.now();
         await reload();
-        const changed = s.added + s.updated + s.uninstalled > 0;
-        if (!quiet || changed) {
+        const changed = total.added + total.updated + total.uninstalled > 0;
+        if (!any) {
+          if (!quiet) notify("Nenhuma loja (Steam, Epic ou GOG) foi encontrada neste computador.");
+        } else if (!quiet || changed) {
           notify(
             changed
-              ? `Steam: ${s.added} novo(s), ${s.updated} reinstalado(s), ${s.uninstalled} desinstalado(s).`
-              : "Steam: biblioteca já está atualizada.",
+              ? `Lojas: ${total.added} novo(s), ${total.updated} reinstalado(s), ${total.uninstalled} desinstalado(s).`
+              : "Lojas: biblioteca já está atualizada.",
           );
         }
-        if (s.added > 0) void enrichAll();
-        return s;
+        if (steamAdded > 0) void enrichAll();
       } catch (e) {
         if (!quiet) fail(e);
-        return null;
       } finally {
         busy.current = false;
       }
@@ -84,29 +105,25 @@ export function useLibrary(notify: (msg: string) => void) {
     [enrichAll, fail, notify, reload],
   );
 
-  // Início: carrega a biblioteca e sincroniza com a Steam, se ela existir.
+  // Início: carrega a biblioteca e sincroniza com as lojas.
   useEffect(() => {
     void (async () => {
       await reload();
-      try {
-        const st = await api.steamStatus();
-        setSteam(st);
-        if (st.found) await syncSteam(true);
-      } catch (e) {
-        fail(e);
-      }
+      await syncAll(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Detecta mudanças na Steam ao voltar para o launcher (sem processo em segundo plano).
+  // Ao voltar para o launcher (por exemplo, depois de fechar um jogo): atualiza recentes e
+  // tempo de jogo; sincroniza as lojas se já passou um tempo. Sem processo em segundo plano.
   useEffect(() => {
     const onFocus = () => {
-      if (steam?.found && Date.now() - lastSync.current > FOCUS_SYNC_MIN_INTERVAL_MS) void syncSteam(true);
+      void reload();
+      if (Date.now() - lastSync.current > FOCUS_SYNC_MIN_INTERVAL_MS) void syncAll(true);
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [steam, syncSteam]);
+  }, [reload, syncAll]);
 
   const guard = useCallback(
     async <T,>(fn: () => Promise<T>): Promise<T | null> => {
@@ -123,10 +140,11 @@ export function useLibrary(notify: (msg: string) => void) {
   return {
     games,
     loading,
-    steam,
+    platforms,
     progress,
     replace,
-    syncSteam,
+    reload,
+    syncAll,
     enrichAll,
     addGame: async (g: NewGame) => {
       const created = await guard(() => api.addGame(g));

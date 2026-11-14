@@ -1,19 +1,28 @@
-//! Inicialização de jogos: protocolo da Steam ou executável local.
+//! Inicialização de jogos: endereços das lojas ou executável local.
 use crate::error::{AppError, AppResult};
 use crate::library::model::Game;
 use std::path::Path;
+use std::process::Child;
 
-fn valid_steam_uri(uri: &str) -> bool {
-    uri.strip_prefix("steam://")
-        .map(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_alphanumeric() || "/_-".contains(c)))
-        .unwrap_or(false)
+const URI_PREFIXES: [&str; 2] = ["steam://", "com.epicgames.launcher://apps/"];
+
+fn valid_uri(uri: &str) -> bool {
+    let rest = URI_PREFIXES.iter().find_map(|p| uri.strip_prefix(p));
+    match rest {
+        Some(r) => {
+            !r.is_empty()
+                && uri.len() < 300
+                && uri.chars().all(|c| c.is_ascii_alphanumeric() || "/_-%:?=&.".contains(c))
+        }
+        None => false,
+    }
 }
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[cfg(windows)]
-fn open_uri(uri: &str) -> AppResult<()> {
+pub(crate) fn open_uri(uri: &str) -> AppResult<()> {
     use std::os::windows::process::CommandExt;
     std::process::Command::new("rundll32")
         .args(["url.dll,FileProtocolHandler", uri])
@@ -23,28 +32,42 @@ fn open_uri(uri: &str) -> AppResult<()> {
 }
 
 #[cfg(not(windows))]
-fn open_uri(_uri: &str) -> AppResult<()> {
-    Err(AppError::Invalid("Iniciar jogos só funciona no Windows.".into()))
+pub(crate) fn open_uri(_uri: &str) -> AppResult<()> {
+    Err(AppError::Invalid("Esta ação só funciona no Windows.".into()))
 }
 
-pub fn launch(g: &Game) -> AppResult<()> {
+/// Só abre páginas do GitHub (usado pela verificação de atualização).
+pub fn open_external(url: &str) -> AppResult<()> {
+    let ok = url.starts_with("https://github.com/")
+        && url.len() < 300
+        && url.chars().all(|c| c.is_ascii_alphanumeric() || "/_-.%:?=&#~".contains(c));
+    if !ok {
+        return Err(AppError::Invalid("Endereço não permitido.".into()));
+    }
+    open_uri(url)
+}
+
+/// Devolve o processo quando o jogo é aberto diretamente (permite contar o tempo de jogo).
+pub fn launch(g: &Game) -> AppResult<Option<Child>> {
     if g.platform == "steam" {
         let id = g
             .platform_id
             .as_deref()
             .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()))
             .ok_or_else(|| AppError::Invalid("Este jogo da Steam não tem um AppID válido.".into()))?;
-        return open_uri(&format!("steam://rungameid/{id}"));
+        open_uri(&format!("steam://rungameid/{id}"))?;
+        return Ok(None);
     }
     let target = g
         .launch_target
         .as_deref()
         .ok_or_else(|| AppError::Invalid("Defina o executável do jogo antes de iniciar.".into()))?;
-    if target.starts_with("steam://") {
-        if !valid_steam_uri(target) {
-            return Err(AppError::Invalid("Endereço steam:// inválido.".into()));
+    if URI_PREFIXES.iter().any(|p| target.starts_with(p)) {
+        if !valid_uri(target) {
+            return Err(AppError::Invalid("Endereço de inicialização inválido.".into()));
         }
-        return open_uri(target);
+        open_uri(target)?;
+        return Ok(None);
     }
     let path = Path::new(target);
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
@@ -58,8 +81,7 @@ pub fn launch(g: &Game) -> AppResult<()> {
     if let Some(dir) = path.parent() {
         cmd.current_dir(dir);
     }
-    cmd.spawn()?;
-    Ok(())
+    Ok(Some(cmd.spawn()?))
 }
 
 #[cfg(test)]
@@ -67,10 +89,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn steam_uri_validation() {
-        assert!(valid_steam_uri("steam://rungameid/620"));
-        assert!(!valid_steam_uri("steam://x y"));
-        assert!(!valid_steam_uri("http://a"));
-        assert!(!valid_steam_uri("steam://"));
+    fn uri_validation() {
+        assert!(valid_uri("steam://rungameid/620"));
+        assert!(valid_uri("com.epicgames.launcher://apps/a%3Ab%3Ac?action=launch&silent=true"));
+        assert!(!valid_uri("steam://x y"));
+        assert!(!valid_uri("http://a"));
+        assert!(!valid_uri("steam://"));
+        assert!(!valid_uri("com.epicgames.launcher://other/x"));
+    }
+
+    #[test]
+    fn external_only_github() {
+        assert!(open_external("https://evil.com/x").is_err());
+        assert!(open_external("https://github.com/a b").is_err());
     }
 }

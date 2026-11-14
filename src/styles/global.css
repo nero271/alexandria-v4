@@ -141,3 +141,12 @@ input[type="color"] { width: 40px; height: 34px; padding: 2px; border: 0; border
 .round.focus { outline: 2px solid var(--accent); background: rgba(255,255,255,.18); }
 .round.on { color: var(--accent); }
 .actions { align-items: center; }
+
+/* Teclado na tela */
+dialog.osk { width: min(760px, 96vw); margin: auto auto 24px; padding: 18px; }
+.osk-text { min-height: 44px; margin-bottom: 12px; padding: 10px 16px; background: rgba(255,255,255,.08); border-radius: 14px; font-size: 18px; white-space: pre-wrap; word-break: break-all; }
+.osk-row { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
+.osk-key { min-width: 46px; height: 46px; padding: 0 12px; background: rgba(255,255,255,.09); border: 0; border-radius: 12px; font-size: 17px; transition: background 120ms var(--ease), transform 200ms var(--spring); }
+.osk-key.wide { flex: 1; max-width: 180px; }
+.osk-key.focus { background: rgba(255,255,255,.22); outline: 2px solid var(--accent); transform: scale(1.06); }
+.osk-key.on { color: var(--accent); }

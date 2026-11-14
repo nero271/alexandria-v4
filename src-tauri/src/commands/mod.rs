@@ -1,5 +1,8 @@
+pub mod app;
+pub mod backup;
 pub mod library;
 pub mod metadata;
+pub mod platforms;
 pub mod settings;
 pub mod steam;
 

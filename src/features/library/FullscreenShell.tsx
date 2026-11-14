@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Hints } from "../../components/Hints";
 import { Icon } from "../../components/Icon";
 import { asset } from "../../lib/assets";
+import { fmtPlaytime } from "../../lib/format";
 import { glyph, type PadKind } from "../../input/glyphs";
 import { TABS, type Tab } from "../browse/useBrowse";
 import { GameCard } from "./GameCard";
@@ -61,7 +62,7 @@ export function FullscreenShell({ games, hasAny, selected, onSelect, onOpen, onP
           <>
             {logo ? <img className="fs-logo" src={logo} alt={selected.name} /> : <h2>{selected.name}</h2>}
             <p className="fs-sub">
-              {[selected.category, selected.platform === "steam" ? "Steam" : selected.platform].filter(Boolean).join("  ·  ")}
+              {[selected.category, selected.platform === "steam" ? "Steam" : selected.platform, fmtPlaytime(selected.playtimeMinutes)].filter(Boolean).join("  ·  ")}
             </p>
             {selected.description && <p className="fs-desc">{selected.description}</p>}
             <button className="play" onClick={() => onPlay(selected)}>

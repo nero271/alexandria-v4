@@ -1,11 +1,14 @@
 //! Detecção da Steam e leitura dos jogos instalados (arquivos .acf e libraryfolders.vdf).
 use serde::Serialize;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SteamApp {
     pub app_id: String,
     pub name: String,
+    /// Minutos jogados, lidos do arquivo local da própria Steam.
+    pub playtime: Option<i64>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -88,7 +91,68 @@ pub fn parse_manifest(acf: &str) -> Option<SteamApp> {
             return None;
         }
     }
-    Some(SteamApp { app_id, name })
+    Some(SteamApp { app_id, name, playtime: None })
+}
+
+/// Lê "Playtime" (minutos) de cada AppID no localconfig.vdf.
+pub fn parse_playtimes(vdf: &str) -> HashMap<String, i64> {
+    let toks = tokenize(vdf);
+    let mut stack: Vec<String> = Vec::new();
+    let mut out: HashMap<String, i64> = HashMap::new();
+    let mut i = 0;
+    while i < toks.len() {
+        match &toks[i] {
+            Tok::Str(k) => match toks.get(i + 1) {
+                Some(Tok::Open) => {
+                    stack.push(k.clone());
+                    i += 2;
+                    continue;
+                }
+                Some(Tok::Str(v)) => {
+                    if k.eq_ignore_ascii_case("playtime") {
+                        if let Some(app) = stack.last() {
+                            if !app.is_empty() && app.chars().all(|c| c.is_ascii_digit()) {
+                                if let Ok(n) = v.parse::<i64>() {
+                                    let e = out.entry(app.clone()).or_insert(0);
+                                    if n > *e {
+                                        *e = n;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    i += 2;
+                    continue;
+                }
+                _ => {}
+            },
+            Tok::Close => {
+                stack.pop();
+            }
+            Tok::Open => {}
+        }
+        i += 1;
+    }
+    out
+}
+
+fn playtimes(steam_dir: &Path) -> HashMap<String, i64> {
+    let mut all: HashMap<String, i64> = HashMap::new();
+    let Ok(users) = std::fs::read_dir(steam_dir.join("userdata")) else {
+        return all;
+    };
+    for user in users.flatten() {
+        let file = user.path().join("config").join("localconfig.vdf");
+        if let Ok(text) = std::fs::read_to_string(file) {
+            for (app, n) in parse_playtimes(&text) {
+                let e = all.entry(app).or_insert(0);
+                if n > *e {
+                    *e = n;
+                }
+            }
+        }
+    }
+    all
 }
 
 pub fn find_steam_dir() -> Option<PathBuf> {
@@ -125,6 +189,7 @@ pub fn scan_installed(steam_dir: &Path) -> Vec<SteamApp> {
             }
         }
     }
+    let times = playtimes(steam_dir);
     let mut apps: Vec<SteamApp> = Vec::new();
     for lib in libs {
         let Ok(entries) = std::fs::read_dir(lib.join("steamapps")) else {
@@ -136,7 +201,8 @@ pub fn scan_installed(steam_dir: &Path) -> Vec<SteamApp> {
                 continue;
             }
             if let Ok(text) = std::fs::read_to_string(entry.path()) {
-                if let Some(app) = parse_manifest(&text) {
+                if let Some(mut app) = parse_manifest(&text) {
+                    app.playtime = times.get(&app.app_id).copied();
                     if !apps.iter().any(|a| a.app_id == app.app_id) {
                         apps.push(app);
                     }
@@ -180,6 +246,23 @@ mod tests {
     fn reads_manifest() {
         let a = parse_manifest(ACF).unwrap();
         assert_eq!((a.app_id.as_str(), a.name.as_str()), ("1145360", "Hades"));
+    }
+
+    #[test]
+    fn reads_playtimes() {
+        let vdf = r#"
+"UserLocalConfigStore"
+{
+    "Software" { "Valve" { "Steam" { "apps" {
+        "620" { "LastPlayed" "1700000000" "Playtime" "125" }
+        "1145360" { "cloud" { "Playtime" "7" } "Playtime" "300" }
+        "notanapp" { "Playtime" "9" }
+    } } } }
+}"#;
+        let p = parse_playtimes(vdf);
+        assert_eq!(p.get("620"), Some(&125));
+        assert_eq!(p.get("1145360"), Some(&300));
+        assert!(!p.contains_key("notanapp"));
     }
 
     #[test]

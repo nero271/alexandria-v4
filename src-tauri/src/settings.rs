@@ -29,6 +29,8 @@ pub fn validate(key: &str, value: &str) -> AppResult<()> {
         "igdb_id" => Err(invalid("Client ID grande demais.")),
         "igdb_secret" if value.len() <= 200 => Ok(()),
         "igdb_secret" => Err(invalid("Client Secret grande demais.")),
+        "start_fullscreen" | "sounds" if matches!(value, "on" | "off") => Ok(()),
+        "start_fullscreen" | "sounds" => Err(invalid("Valor inválido.")),
         "app_bg" => Ok(()),
         _ => Err(invalid("Configuração desconhecida.")),
     }

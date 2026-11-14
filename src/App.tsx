@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { asset } from "./lib/assets";
 import type { Game } from "./lib/types";
@@ -35,7 +35,14 @@ export default function App() {
   const lib = useLibrary(notify);
   const browse = useBrowse(lib.games);
   const pad = useInputSource();
-  const mode = cfg.mode;
+  // Tela cheia ao abrir é uma opção (desligada por padrão); sem a opção, sempre abre no desktop.
+  const [mode, setMode] = useState<"desktop" | "fullscreen">("desktop");
+  const started = useRef(false);
+  useEffect(() => {
+    if (!cfg.ready || started.current) return;
+    started.current = true;
+    if (cfg.s.start_fullscreen === "on") setMode("fullscreen");
+  }, [cfg.ready, cfg.s.start_fullscreen]);
 
   const [detailsId, setDetailsId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Game | "new" | null>(null);
@@ -48,7 +55,7 @@ export default function App() {
     getCurrentWindow().setFullscreen(mode === "fullscreen").catch(() => {});
   }, [mode]);
 
-  const toggleMode = () => void cfg.set("mode", mode === "fullscreen" ? "desktop" : "fullscreen");
+  const toggleMode = () => setMode((m) => (m === "fullscreen" ? "desktop" : "fullscreen"));
 
   async function launch(g: Game) {
     if (await lib.launchGame(g)) {
@@ -162,9 +169,10 @@ export default function App() {
           s={cfg.s}
           set={cfg.set}
           replaceAll={cfg.replaceAll}
-          steam={lib.steam}
+          platforms={lib.platforms}
+          reload={lib.reload}
           progress={lib.progress}
-          onSync={() => void lib.syncSteam()}
+          onSync={() => void lib.syncAll()}
           onEnrich={() => void lib.enrichAll()}
           onAdd={() => {
             setSettingsOpen(false);

@@ -3,7 +3,10 @@ use rusqlite::Connection;
 
 /// Cada item é uma migração; a versão do banco é o índice + 1 (PRAGMA user_version).
 /// Nunca edite uma migração já publicada: adicione uma nova ao final.
-const MIGRATIONS: &[&str] = &[include_str!("../../migrations/0001_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../../migrations/0001_init.sql"),
+    include_str!("../../migrations/0002_playtime.sql"),
+];
 
 pub fn run(conn: &mut Connection) -> AppResult<()> {
     let current: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;

@@ -15,7 +15,13 @@ IMPORTANTE: esta versão substitui a anterior. Crie um repositório NOVO no GitH
 8. Em "Artifacts", baixe "ALEXANDRIA-instalador", extraia e dê dois cliques no .exe.
    Se o Windows avisar "O Windows protegeu seu computador": "Mais informações" > "Executar assim mesmo".
 
-NOVIDADES DESTA VERSÃO (histórico completo em CHANGELOG.md)
+NOVIDADES DA V6 (histórico completo em CHANGELOG.md)
+- Ajustes (ícone de controles deslizantes): "Abrir já em tela cheia" e "Iniciar com o Windows" (ambos desligados).
+- Epic e GOG entram na biblioteca sozinhos; tempo de jogo aparece nos detalhes.
+- Com o controle, confirmar em um campo de texto abre um teclado na tela.
+- Backup/importação, medição de desempenho, sons opcionais e IGDB com imagens.
+
+NOVIDADES DA V4 (histórico completo em CHANGELOG.md)
 - Botões de ajustes e tela cheia agora são ícones; dicas do controle também.
 - Visual refeito: barra translúcida, abas com indicador deslizante, capas que sobem com efeito de mola.
 - No fullscreen, confirmar (A / ✕) já inicia o jogo, como num console. △ / Y abre os detalhes.

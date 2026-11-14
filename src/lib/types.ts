@@ -18,6 +18,7 @@ export interface Game {
   logoPath: string | null;
   createdAt: number;
   updatedAt: number;
+  playtimeMinutes: number;
 }
 
 export interface NewGame {
@@ -62,6 +63,24 @@ export interface IgdbGame {
   id: number;
   name: string;
   summary: string | null;
+}
+
+export interface PlatformStatus {
+  steam: boolean;
+  epic: boolean;
+  gog: boolean;
+}
+
+export interface UpdateInfo {
+  current: string;
+  latest: string | null;
+  newer: boolean;
+  url: string | null;
+}
+
+export interface BackupSummary {
+  added: number;
+  skipped: number;
 }
 
 export type Settings = Record<string, string>;

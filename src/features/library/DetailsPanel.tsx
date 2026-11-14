@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Hints } from "../../components/Hints";
 import { Icon, type IconName } from "../../components/Icon";
 import { asset } from "../../lib/assets";
+import { fmtPlaytime } from "../../lib/format";
 import { useActionHandler } from "../../input/bus";
 import type { PadKind } from "../../input/glyphs";
 import type { Game } from "../../lib/types";
@@ -53,7 +54,7 @@ export function DetailsPanel({ game, pad, onClose, onLaunch, onFavorite, onEdit 
         <div className="details-body">
           {logo ? <img className="details-logo" src={logo} alt={game.name} /> : <h2>{game.name}</h2>}
           <p className="fs-sub">
-            {[game.category, game.platform === "steam" ? "Steam" : game.platform, game.installState === "not_installed" ? "Não instalado" : null]
+            {[game.category, game.platform === "steam" ? "Steam" : game.platform, game.installState === "not_installed" ? "Não instalado" : null, fmtPlaytime(game.playtimeMinutes)]
               .filter(Boolean)
               .join("  ·  ")}
           </p>

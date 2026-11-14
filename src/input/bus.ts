@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { playFor } from "../lib/sound";
 
 export type Action =
   | "left" | "right" | "up" | "down"
@@ -9,6 +10,7 @@ const stack: Handler[] = [];
 
 /** Só o componente aberto mais recentemente recebe os comandos: evita conflitos de entrada. */
 export function dispatch(a: Action) {
+  playFor(a);
   stack[stack.length - 1]?.(a);
 }
 

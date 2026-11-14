@@ -3,7 +3,7 @@ use crate::error::AppResult;
 use crate::launcher;
 use crate::library::model::{Game, GameUpdate, NewGame};
 use crate::library::repository as repo;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
 pub fn list_games(
@@ -39,9 +39,21 @@ pub fn clear_image(state: State<'_, AppState>, id: i64, kind: String) -> AppResu
     state.with_db(|c| repo::set_image(c, id, &kind, None))
 }
 
+/// Inicia o jogo. Quando o jogo abre direto por executável, conta o tempo até ele fechar.
 #[tauri::command]
-pub fn launch_game(state: State<'_, AppState>, id: i64) -> AppResult<Game> {
+pub fn launch_game(app: AppHandle, state: State<'_, AppState>, id: i64) -> AppResult<Game> {
     let game = state.with_db(|c| repo::get(c, id))?;
-    launcher::launch(&game)?;
+    if let Some(mut child) = launcher::launch(&game)? {
+        std::thread::spawn(move || {
+            let start = std::time::Instant::now();
+            let _ = child.wait();
+            let minutes = (start.elapsed().as_secs() / 60) as i64;
+            if minutes > 0 {
+                if let Some(st) = app.try_state::<AppState>() {
+                    let _ = st.with_db(|c| repo::add_playtime(c, id, minutes));
+                }
+            }
+        });
+    }
     state.with_db(|c| repo::mark_played(c, id))
 }
