@@ -1,0 +1,40 @@
+/* Identidade visual do ALEXANDRIA: preto e grafite, com um único acento areia (papiro). */
+:root {
+  --ink: #050505;
+  --graphite-900: #0f0f10;
+  --graphite-800: #161617;
+  --graphite-700: #202022;
+  --graphite-600: #2c2c2f;
+  --text: #ebe8e1;
+  --text-muted: #8f8c85;
+  --accent: #cbb98d;
+  --danger: #d9776b;
+
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 40px;
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --out: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+  --glass: rgba(24, 24, 26, 0.55);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+  }
+}

@@ -1,0 +1,48 @@
+name: Gerar instalador do ALEXANDRIA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Instalar dependências
+        run: npm install
+      - name: Gerar ícones
+        run: npx tauri icon app-icon.png
+      - name: Verificar tipos (informativo)
+        run: npx tsc --noEmit
+        continue-on-error: true
+      - name: Rodar testes do Rust (informativo)
+        run: cargo test
+        working-directory: src-tauri
+        continue-on-error: true
+      - name: Montar o instalador
+        run: npx tauri build
+      - name: Guardar o instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: ALEXANDRIA-instalador
+          path: src-tauri/target/release/bundle/nsis/*.exe
+      - name: Publicar a versão no GitHub (para a verificação de atualização)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $v = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $exe = (Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1).FullName
+          gh release create "v$v" "$exe" --title "ALEXANDRIA v$v" --notes "Instalador do ALEXANDRIA v$v" --target ${{ github.sha }}
+          if ($LASTEXITCODE -ne 0) { gh release upload "v$v" "$exe" --clobber }
+        env:
+          GH_TOKEN: ${{ github.token }}
