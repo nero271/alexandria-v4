@@ -1,5 +1,10 @@
 # ALEXANDRIA — histórico de versões
 
+## v5 — correção da tela preta
+- Corrigido: o fundo dinâmico podia ficar sem camadas quando a imagem trocava duas vezes em menos de meio segundo
+  (acontecia quando a Steam terminava de baixar capas), derrubando a interface e deixando a tela preta.
+- Nova proteção: se a interface quebrar, aparece uma mensagem com o erro e o botão Recarregar, em vez de tela preta.
+
 ## v4 — ícones no lugar de textos
 - Ajustes e tela cheia agora são botões só com ícone (com dica ao passar o mouse).
 - Dicas do controle no fullscreen mostram o botão + um ícone, sem frases.

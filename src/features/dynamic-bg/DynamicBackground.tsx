@@ -28,13 +28,14 @@ export function DynamicBackground({ game, neighbors, fallback }: Props) {
 
   useEffect(() => {
     const top = layers[layers.length - 1];
-    if (top.src === src) return;
+    if (top && top.src === src) return;
     let cancelled = false;
     const show = () => {
       if (cancelled) return;
       const id = ++counter.current;
       setLayers((prev) => [...prev.slice(-1), { id, src }]);
-      window.setTimeout(() => setLayers((prev) => prev.filter((l) => l.id === id)), FADE_MS + 80);
+      // Mantém sempre a camada mais nova; nunca deixa a lista vazia.
+      window.setTimeout(() => setLayers((prev) => (prev.length > 1 ? prev.slice(-1) : prev)), FADE_MS + 80);
     };
     if (!src) {
       show();
