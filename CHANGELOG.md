@@ -1,5 +1,9 @@
 # ALEXANDRIA — histórico de versões
 
+## v5.1 — versão visível
+- O número da versão agora aparece nos ajustes e no nome do instalador (ALEXANDRIA_0.5.1_x64-setup.exe),
+  para saber exatamente qual versão está instalada.
+
 ## v5 — correção da tela preta
 - Corrigido: o fundo dinâmico podia ficar sem camadas quando a imagem trocava duas vezes em menos de meio segundo
   (acontecia quando a Steam terminava de baixar capas), derrubando a interface e deixando a tela preta.

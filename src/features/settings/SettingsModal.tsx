@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { Icon } from "../../components/Icon";
 import { Modal } from "../../components/Modal";
 import { api, errorMessage } from "../../lib/ipc";
+import { APP_VERSION } from "../../lib/version";
 import type { Settings, SteamStatus } from "../../lib/types";
 import type { Progress } from "../library/useLibrary";
 
@@ -114,6 +115,7 @@ export function SettingsModal({ s, set, replaceAll, steam, progress, onSync, onE
         </button>
       </div>
 
+      <p className="muted">ALEXANDRIA v{APP_VERSION}</p>
       <div className="acts"><button className="btn primary" onClick={onClose}>Concluir</button></div>
     </Modal>
   );
