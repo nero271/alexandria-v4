@@ -1,5 +1,8 @@
 # ALEXANDRIA — histórico de versões
 
+## v7.1 — correção do ícone
+- Corrigido: o arquivo do ícone (app-icon.png) estava corrompido desde a v6.2 e impedia o gerador de instalador de rodar.
+
 ## v7 — iniciar jogo com tela de carregamento
 - Ao iniciar um jogo, aparece uma tela de carregamento (capa, fundo desfocado e barra) até o jogo abrir.
 - Quando o jogo abre, o ALEXANDRIA minimiza; quando o jogo fecha, ele volta e atualiza a lista (recentes e tempo de jogo).
