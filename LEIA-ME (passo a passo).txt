@@ -1,0 +1,56 @@
+ALEXANDRIA — como gerar o programa para Windows (sem programar)
+
+IMPORTANTE: esta versão substitui a anterior. Crie um repositório NOVO no GitHub
+(não envie por cima do antigo, para não sobrar arquivo velho).
+
+1. Entre em github.com e clique em "+" > "New repository".
+   Nome: alexandria-2. Marque "Private". Clique em "Create repository".
+2. Clique no link "uploading an existing file".
+3. Extraia este .zip no computador. Abra a pasta "alexandria", selecione TUDO
+   que está dentro (inclusive a pasta .github) e arraste para a página do GitHub.
+4. Espere o envio terminar e clique em "Commit changes".
+5. Aba "Actions" > se pedir, "I understand my workflows, go ahead and enable them".
+6. À esquerda, "Gerar instalador do ALEXANDRIA" > "Run workflow" > "Run workflow".
+7. Aguarde 10 a 25 minutos. Quando aparecer o ✓ verde, clique na execução.
+8. Em "Artifacts", baixe "ALEXANDRIA-instalador", extraia e dê dois cliques no .exe.
+   Se o Windows avisar "O Windows protegeu seu computador": "Mais informações" > "Executar assim mesmo".
+
+NOVIDADES DA V6 (histórico completo em CHANGELOG.md)
+- Ajustes (ícone de controles deslizantes): "Abrir já em tela cheia" e "Iniciar com o Windows" (ambos desligados).
+- Epic e GOG entram na biblioteca sozinhos; tempo de jogo aparece nos detalhes.
+- Com o controle, confirmar em um campo de texto abre um teclado na tela.
+- Backup/importação, medição de desempenho, sons opcionais e IGDB com imagens.
+
+NOVIDADES DA V4 (histórico completo em CHANGELOG.md)
+- Botões de ajustes e tela cheia agora são ícones; dicas do controle também.
+- Visual refeito: barra translúcida, abas com indicador deslizante, capas que sobem com efeito de mola.
+- No fullscreen, confirmar (A / ✕) já inicia o jogo, como num console. △ / Y abre os detalhes.
+  Gatilhos LT/RT (L2/R2) pulam 6 jogos de uma vez. Aparecem relógio e tipo de controle.
+- IGDB incluído: em Configurações cole o Client ID e o Client Secret (grátis em dev.twitch.tv);
+  depois, ao editar um jogo, use "Buscar descrição no IGDB" e escolha a que quiser.
+- Para adicionar jogos no fullscreen: Configurações > Biblioteca > Adicionar jogo manualmente.
+
+O QUE VOCÊ PODE TESTAR (tudo funciona de verdade)
+- Ao abrir: se você tem a Steam, seus jogos instalados entram sozinhos e as capas
+  são baixadas automaticamente (sem precisar de chave nenhuma).
+- "Adicionar jogo": cadastre jogos de fora da Steam (escolha o .exe).
+- Clique em um jogo > "Jogar" (abre pela Steam ou pelo .exe).
+- Favoritar, buscar, filtrar por categoria e abas Todos / Favoritos / Recentes.
+- "Modo fullscreen": tela inteira estilo console. Ligue um controle de Xbox ou PlayStation:
+  direcional/analógico navega, A/✕ abre, X/□ favorita, LB/RB (L1/R1) trocam de seção,
+  Menu/Options abre as configurações. Os símbolos na tela trocam sozinhos.
+  Teclado: setas, Enter, Esc, Espaço (favoritar), N (adicionar), [ ], S (configurações), M (modo).
+- O fundo da tela muda com suavidade para a arte do jogo selecionado.
+- Configurações: nome do app, cor de destaque, transparência do véu, animações,
+  imagem de fundo própria.
+- Para buscar capas alternativas: crie uma chave grátis em steamgriddb.com
+  (Preferências > API), cole em Configurações > SteamGridDB. Depois, em Editar jogo >
+  "Buscar online" para cada imagem.
+
+LIMITES CONHECIDOS (honestos)
+- Eu não consegui compilar nem testar o programa no ambiente onde o escrevi.
+  Se o passo 7 terminar com ✗ vermelho, abra a etapa que falhou, copie o texto do erro
+  e me envie: eu corrijo e devolvo um novo .zip.
+- Mesmo com o ✓ verde, pode haver defeitos que só aparecem ao usar. Anote o que viu.
+- Escrever textos (nome, categoria) exige teclado; o controle navega e aciona botões.
+- O ícone do programa não muda com ele aberto (só na instalação).
