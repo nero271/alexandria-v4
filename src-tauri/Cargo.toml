@@ -1,0 +1,37 @@
+[package]
+name = "alexandria"
+version = "0.11.0"
+description = "ALEXANDRIA — launcher universal de jogos"
+edition = "2021"
+
+[lib]
+name = "alexandria_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-autostart = "2"
+ureq = { version = "2", features = ["json"] }
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+fs2 = "0.4"
+tauri-plugin-log = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+thiserror = "1"
+log = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

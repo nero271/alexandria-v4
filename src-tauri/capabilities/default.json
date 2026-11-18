@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schema/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permiss\u00f5es da janela principal",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-minimize",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
+    "dialog:default",
+    "autostart:default",
+    "core:window:allow-unminimize",
+    "core:window:allow-show",
+    "core:window:allow-set-focus"
+  ]
+}
